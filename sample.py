@@ -1,5 +1,8 @@
 from chroma import Chroma
 from chroma import api
+import numpy as np
+import os
+from tqdm import tqdm
 api.register_key("5d9b4b61795e4b0db2db832d332d19d6")
 import argparse
 parser = argparse.ArgumentParser()
@@ -15,9 +18,8 @@ parser.add_argument('--sorted', action='store_true', help='Run in decreasing ord
 # Parse arguments
 args = parser.parse_args()
 
-lens = np.load(args.len_dist)['lengths']
-
 if args.len_dist is not None:
+    lens = np.load(args.len_dist)['lengths']
     sample_lens = []
     for i in range(args.num_samples):
         choice = 0
@@ -29,9 +31,9 @@ if args.len_dist is not None:
 else:
     sample_lens = [args.len] * args.num_samples
 
-
+chroma = Chroma()
+os.makedirs(args.outdir, exist_ok=True)
 for i, length in tqdm(enumerate(sample_lens)):
-    print(f'{i} of {len(sample_lens)}')
-    chroma = Chroma()
+    print(f'{i} of {len(sample_lens)} with len {length}')
     protein = chroma.sample(chain_lengths=[length], samples=1)
-    protein.to(f"{args.outdir}/{run_name}sample{i}.pdb")
+    protein.to(f"{args.outdir}/{args.run_name}sample{i}.pdb")
