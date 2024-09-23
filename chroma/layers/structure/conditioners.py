@@ -34,6 +34,61 @@ from chroma.models.graph_classifier import GraphClassifier
 from chroma.models.graph_design import GraphDesign
 from chroma.models.procap import ProteinCaption
 
+import numpy as np
+import plotly.graph_objects as go
+import plotly.express as px
+import os
+from pathlib import Path
+import math
+import numpy as np
+
+def plot_point_cloud(point_clouds, path=None):
+    # Takes a list of point cloud tensors and plots them
+    if not isinstance(point_clouds, list):
+        point_clouds = [point_clouds]
+
+    colors = ['red', 'blue', 'green', 'yellow', 'orange']  # List of colors for each point cloud
+    traces = []  # List to store individual traces for each point cloud
+
+    for i, point_cloud in enumerate(point_clouds):
+        if isinstance(point_cloud, np.ndarray):
+            pass
+        elif isinstance(point_cloud, torch.Tensor):
+            point_cloud = point_cloud.numpy()
+
+        x_data = point_cloud[:, 0]
+        y_data = point_cloud[:, 1]
+        z_data = point_cloud[:, 2]
+
+        # Create a trace for each point cloud with a different color
+        trace = go.Scatter3d(
+            x=x_data,
+            y=y_data,
+            z=z_data,
+            mode='markers',
+            marker=dict(
+                size=5,
+                opacity=0.8,
+                color=colors[i % len(colors)]  # Assign color based on the index of the point cloud
+            ),
+            name=f"Point Cloud {i + 1}"
+        )
+        traces.append(trace)
+
+    # Create the layout
+    layout = go.Layout(
+        scene=dict(
+            aspectmode='data'
+        )
+    )
+
+    # Create the figure and add the traces to it
+    fig = go.Figure(data=traces, layout=layout)
+
+    if path is None:
+        fig.show()
+    else:
+        fig.write_html(path)
 
 class Conditioner(torch.nn.Module):
     """
@@ -416,7 +471,8 @@ class ShapeConditioner(Conditioner):
         # [Num_batch, Num_atoms_target, Num_atoms_model]
         X_target = self.X_target
         X_model = X.reshape([X.shape[0], -1, 3])
-
+        plot_point_cloud([X_target[0].detach().cpu().numpy(), X_model[0].detach().cpu().numpy()], 'bothpoints.html')
+        
         # Radius of gyration ceiling
         num_residues = X.shape[1]
         min_rg = 2.0 * num_residues**0.333

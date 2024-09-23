@@ -12,8 +12,10 @@ parser.add_argument('--run_name', type=str, help='Root directory', default='')
 parser.add_argument('--outdir', type=str, help='Output directory', required=True)
 parser.add_argument('--num_samples', type=int, help='Number of samples per length', default=5)
 parser.add_argument('--len', type=int, help='Number of samples per length', default=100)
+parser.add_argument('--inverse_temperature', type=float, help='Number of samples per length', default=10)
 parser.add_argument('--len_dist', type=str, help='Output directory', default=None)
 parser.add_argument('--sorted', action='store_true', help='Run in decreasing order of length')
+parser.add_argument('--cap_lengths', action='store_true', help='Run in decreasing order of length')
 
 # Parse arguments
 args = parser.parse_args()
@@ -22,8 +24,11 @@ if args.len_dist is not None:
     lens = np.load(args.len_dist)['lengths']
     sample_lens = []
     for i in range(args.num_samples):
-        choice = 0
-        while choice < 4 or choice > 500:
+        if args.cap_lengths:
+            choice = 0
+            while choice < 4 or choice > 500:
+                choice = np.random.choice(lens)
+        else:
             choice = np.random.choice(lens)
         sample_lens.append(choice)
     if args.sorted:
@@ -35,5 +40,5 @@ chroma = Chroma()
 os.makedirs(args.outdir, exist_ok=True)
 for i, length in tqdm(enumerate(sample_lens)):
     print(f'{i} of {len(sample_lens)} with len {length}')
-    protein = chroma.sample(chain_lengths=[length], samples=1)
+    protein = chroma.sample(chain_lengths=[length], samples=1, inverse_temperature=args.inverse_temperature)
     protein.to(f"{args.outdir}/{args.run_name}sample{i}.pdb")
